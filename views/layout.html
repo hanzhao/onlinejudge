@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="//cdn.bootcss.com/twitter-bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.1.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/public/all.css">
+    <link rel="stylesheet" href="//fonts.useso.com/css?family=Ubuntu:light&subset=Latin">
+    <link rel="icon" href="/favicon.ico">
+    <title>{{ title + ' - Online Judge' }}</title>
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container" id="navbar">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">{{ _('Toggle Navigation') }}</span>
+          <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/"><i class="fa fa-cube"></i> OnlineJudge</a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="/problem"><i class="fa fa-question"></i> {{ _('Problems') }}</a></li>
+          <li><a href="/contest"><i class="fa fa-trophy"></i> {{ _('Contests') }}</a></li>
+          <li><a href="/ranklist"><i class="fa fa-users"></i> {{ _('Ranklist') }}</a></li>
+          <li><a href="/status"><i class="fa fa-tasks"></i> {{ _('Status') }}</a></li>
+        </ul>
+        {% if current_user %}
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/user/{{ current_user }}"><i class="fa fa-user"></i> {{ handler.get_current_username() }}</a></li>
+            <li><a href="#" id="sign-out"><i class="fa fa-sign-out"></i> {{ _('Sign Out') }}</a></li>
+          </ul>
+        {% else %}
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#" id="sign-in"><i class="fa fa-sign-in"></i> {{ _('Sign In') }}</a></li>
+            <li><a href="#" id="sign-up"><i class="fa fa-star"></i> {{ _('Sign Up') }}</a></li>
+          </ul>
+          <form class="navbar-form navbar-right" role="user-info">
+            <div class="form-group">
+              <input id="username" type="text" class="form-control" placeholder="{{ _('Username') }}" />
+            </div>
+            <div class="form-group">
+              <input id="password" type="password" class="form-control" placeholder="{{ _('Password') }}" />
+            </div>
+            {% raw xsrf_form_html() %}
+          </form>
+        {% end %}
+      </div>
+      </div>
+    </div>
+    <div id="Magica">
+      {% block body %}
+      {% end %}
+    </div>
+    <div class="flash-container">
+      <div class="flash-alert">
+      </div>
+    </div>
+  </body>
+  <script src="//cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/twitter-bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="/public/all.js"></script>
+  <script type="text/javascript">
+    function bindnavbar() {
+      $('#sign-up').click(function() {
+        var a = $('#username').val();
+        var b = $('#password').val();
+        if (verify(a, b)) {
+          $.post('/user/signup', { username: a, password: $.md5($.md5(a) + $.md5(b)) }, function(data, status) {
+            if (data != 'ok') {
+              if (data == 'exists') { showmsg("{{ _('Username exists already.') }}"); }
+              else { showmsg("{{ _('Something wrong.') }}"); }
+            }
+            else { $.get('/api/navbar', function(data, status) { $('#navbar').html(data); bindnavbar(); showmsg("{{ _('Sign up successfully.')}}");}); }
+          })
+        }
+        else {
+          showmsg("{{ _('Invalid username or password.') }}");
+        }
+      })
+      $('#sign-in').click(function() {
+        var a = $('#username').val();
+        var b = $('#password').val();
+        if (verify(a, b)) {
+          $.post('/user/signin', { username: a, password: $.md5($.md5(a) + $.md5(b)) }, function(data, status) {
+            if (data != 'ok') {
+              if (data == "invalid") { showmsg("{{ _('Invalid username or password.') }}"); }
+              else { showmsg("{{ _('Something wrong.') }}"); }
+            }
+            else { $.get('/api/navbar', function(data, status) { $('#navbar').html(data); bindnavbar(); showmsg("{{ _('Sign in successfully.')}}");}); }
+          })
+        }
+        else {
+          showmsg("{{ _('Invalid username or password.') }}");
+        }
+      })
+      $('#sign-out').click(function() {
+        $.get('/user/signout', function(data, status) { $.get('/api/navbar', function(data, status) { $('#navbar').html(data); bindnavbar(); showmsg("{{ _('Sign out successfully.') }}"); }); });
+      })
+    }
+    $(document).ready(bindnavbar());
+  </script>
+  {% block bottom %}
+  {% end %}
+</html>
