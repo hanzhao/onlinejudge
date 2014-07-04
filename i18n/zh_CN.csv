@@ -13,3 +13,14 @@
 "Sign in successfully.", 登录成功
 "Sign out successfully.", 登出成功
 "Username exists already.", 用户名已经存在
+"Mark", 状态
+"Problem ID", 题号
+"Title", 标题
+"Ratio", 通过率
+"AC", 通过人数
+"All", 提交人数
+":", ：
+"Time Limit", 时间限制
+"Time Limit:", 时间限制：
+"Memory Limit", 内存限制
+"Memory Limit:", 内存限制：

@@ -1,0 +1,29 @@
+{% extends layout.html %}
+
+{% block body %}
+<div class="container">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th width="6%">{{ _('Mark') }}</th>
+        <th width="10%">{{ _('Problem ID') }}</th>
+        <th width="64%" style="text-align: left;">{{ _('Title') }}</th>
+        <th width="20%">{{ _('Ratio') }} ({{ _('AC') }}/{{ _('All') }})</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if prob %}
+        {% for p in prob %}
+          <tr>
+            <th></th>
+            <th>{{ p.id }}</th>
+            <th style="text-align: left;"><a href="/problem/{{ p.id }}">{{ p.name }}</a></th>
+            <th>{{ "%.2f" % (0 if p.accept == 0 else p.accept * 100.0 / p.submit) }} ({{ p.accept }}/{{ p.submit }})</th>
+            <th></th>
+          </tr>
+        {% end %}
+      {% end %}
+    </tbody>
+  </table>
+</div>
+{% end %}

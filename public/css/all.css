@@ -1,0 +1,98 @@
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Ubuntu Light'), local('Ubuntu-Light'), url(/font/ubuntul.woff) format('woff');
+}
+
+html, body, h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: "Ubuntu", "Monaco", "WenQuanYi Micro Hei", "Microsoft YaHei" !important;
+}
+
+p {
+  text-indent: 2em;
+}
+
+#navbar {
+  font-size: 16px;
+  width: 100%;
+}
+
+#Magica {
+  padding-top: 70px;
+}
+
+.flash-container {
+  display: none;
+  height: 50px;
+  background: none repeat scroll 0% 0% #000;
+  text-align: center;
+  cursor: pointer;
+  color: #FFF;
+  font-size: 16px;
+  position: fixed;
+  bottom: 0px;
+  z-index: 100;
+  width: 100%;
+}
+
+.flash-container .flash-alert {
+  text-shadow: 0px 1px 1px #CCC;
+  padding: 13.5px;
+}
+
+.ctitle {
+  font-size: 160%;
+  color: #037;
+  text-align: left;
+  font-weight: bold;
+  margin: 20px 0px;
+}
+
+.res-limit {
+  margin: 30px 0px;
+}
+
+#com-info {
+  margin-left: 120px;
+  vertical-align: middle;
+  display: inline;
+}
+
+#sub-button {
+  float: right;
+}
+
+.modal-footer {
+  text-align: center;
+}
+
+.table th {
+  text-align: center;
+}
+
+#submit, #status {
+  margin: 50px 30px;
+}
+
+.p-action {
+  text-align: center;
+}
+
+.modal-dialog {
+  margin: 50px auto;
+}
+
+.CodeMirror {
+  height: 650px !important;
+}
+
+@media (max-width: 1400px) {
+  .CodeMirror {
+    height: 400px !important;
+  }
+}
+
+.CodeMirror-code {
+  font-size: 15px;
+}

@@ -29,6 +29,7 @@
     <div class="form-group">
       <input id="password" type="password" class="form-control" placeholder="{{ _('Password') }}" />
     </div>
+    {% raw xsrf_form_html() %}
   </form>
   {% end %}
 </div>

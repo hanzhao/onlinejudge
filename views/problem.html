@@ -1,0 +1,120 @@
+{% extends layout.html %}
+{% block body %}
+<div class="container prob-container">
+  <center>
+    <h1>{{ prob.name }}</h1>
+    <p class="res-limit"><i class="fa fa-clock-o"></i> {{ _('Time Limit:') }} {{ prob.timelimit }}MS    <i class="fa fa-database"></i> {{ _('Memory Limit:') }} {{ prob.memorylimit }}KB    <i class="fa fa-bar-chart-o"></i> {{ _('AC') }}/{{ _('All') }}{{ _(':') }} {{ prob.accept }}/{{ prob.submit }}</p>
+  </center>
+  {% raw prob.content %}
+  <div class="p-action">
+    <button type="button" class="btn btn-lg btn-primary" data-toggle="modal" data-target="#codeArea">{{ _('Submit Code') }}</button> <button type="button" class="btn btn-lg btn-info" id="status">{{ _('Problem Status') }}</button>
+  </div>
+  <div class="modal fade" id="codeArea" tabindex="-1" role="dialog" aria-labelledby="codeAreaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">{{ _('Close') }}</span></button>
+          <h4 class="modal-title" id="codeAreaLabel">{{ _('Submit Code') }}</h4>
+        </div>
+        <form method="POST" action="#">
+          {% raw xsrf_form_html() %}
+          <input type="hidden" id="lang" name="lang" value="{{ 'C++ (g++)' if not uin else uin.compiler }}" />
+          <div class="modal-body">
+            <div class="btn-group btn-group-justified">
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="C">C</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Cpp">C++</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Cpp11">C++11</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Pascal">Pascal</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Java">Java</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Python">Python</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Python3">Python3</button>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default" id="Ruby">Ruby</button>
+              </div>
+            </div>
+            <textarea id="mirror" name="code"></textarea>
+          </div>
+          <div class="modal-footer">
+            <div id="com-info"></div>
+            <div id="sub-button">
+              <button type="button" class="btn btn-default" data-dismiss="modal">{{ _('Close') }}</button>
+              <button class="btn btn-primary" type="submit">{{ _('Submit') }}</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% end %}
+{% block bottom %}
+<link rel="stylesheet" href="{{ static_url('cm/lib/codemirror.css') }}">
+<link rel="stylesheet" href="{{ static_url('cm/theme/monokai.css') }}">
+<script src="{{ static_url('cm/lib/codemirror.js') }}"></script>
+<script src="{{ static_url('cm/mode/pascal/pascal.js') }}"></script>
+<script src="{{ static_url('cm/mode/clike/clike.js') }}"></script>
+<script src="{{ static_url('cm/mode/python/python.js') }}"></script>
+<script src="{{ static_url('cm/mode/ruby/ruby.js') }}"></script>
+<script>
+  var m = {};
+  m['C (gcc)'] = 'text/x-csrc'; m['C++ (g++)'] = m['C++11 (g++)'] = 'text/x-c++src'; m['Pascal (fpc)'] = 'pascal';
+  m['Java (openjdk)'] = 'text/x-java'; m['Python (python)'] = m['Python3 (python3)'] = 'python'; m['Ruby (ruby)'] = 'ruby';
+  function refreshCompilerInfo(cm) {
+    cm.setOption('mode', m[$('#lang').val()]);
+    $('#com-info').text("{{ _('Language:') }} " + $('#lang').val());
+  }
+  $(document).ready(function() {
+    var ncm = CodeMirror.fromTextArea(mirror, {
+      lineNumbers: true,
+      theme: "monokai",
+    });
+    refreshCompilerInfo(ncm);
+    $('#C').click(function() {
+      $('#lang').val('C (gcc)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Cpp').click(function() {
+      $('#lang').val('C++ (g++)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Cpp11').click(function() {
+      $('#lang').val('C++11 (g++)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Pascal').click(function() {
+      $('#lang').val('Pascal (fpc)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Java').click(function() {
+      $('#lang').val('Java (openjdk)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Python').click(function() {
+      $('#lang').val('Python (python)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Python3').click(function() {
+      $('#lang').val('Python3 (python3)');
+      refreshCompilerInfo(ncm);
+    })
+    $('#Ruby').click(function() {
+      $('#lang').val('Ruby (ruby)');
+      refreshCompilerInfo(ncm);
+    })
+  })
+</script>
+{% end %}

@@ -1,0 +1,5 @@
+#!/bin/bash
+./uoj.py 5555 &
+./uoj.py 6666 &
+./uoj.py 7777 &
+./uoj.py 8888 &

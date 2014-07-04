@@ -20,11 +20,12 @@ ActiveRecord::Schema.define do
     t.integer  :admin
     t.integer  :solve
     t.integer  :submit
-    t.integer  :compiler
+    t.string   :compiler
   end
 
   create_table :problems, force: true do |t|
     t.string   :name
+    t.string   :content
     t.integer  :timelimit
     t.integer  :memorylimit
     t.integer  :submit

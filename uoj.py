@@ -3,7 +3,11 @@
 # Magica @ 2014-06-30
 
 import re
+import sys
+import json
 import os.path
+import traceback
+
 import torndb
 import tornado.auth
 import tornado.httpserver
@@ -17,6 +21,9 @@ define('mysql_host', default = '127.0.0.1:3306', help = 'blog database host')
 define('mysql_database', default = 'judge', help = 'blog database name')
 define('mysql_user', default = 'judge', help = 'blog database user')
 define('mysql_password', default = '123456', help = 'blog database password')
+define('_user', 'Magica')
+define('_name', 'Moe')
+define('_secret', 'MagicaCookie')
 
 class BaseHandler(tornado.web.RequestHandler):
     @property
@@ -28,9 +35,20 @@ class BaseHandler(tornado.web.RequestHandler):
         self.set_header('X-XSS-Protection', '1; mode=block')
         self.set_header('x-content-type-options', 'nosniff')
     def get_current_user(self):
-        return self.get_secure_cookie('Magica')
+        return self.get_secure_cookie(options._user)
     def get_current_username(self):
-        return self.get_secure_cookie('Moe')
+        return self.get_secure_cookie(options._name)
+    def write_error(self, status_code, **kwargs):
+        if self.settings.get("debug") and "exc_info" in kwargs:
+            self.set_header('Content-Type', 'text/plain')
+            for line in traceback.format_exception(*kwargs["exc_info"]):
+                self.write(line)
+            self.finish()
+        else:
+            try:
+                self.render(str(status_code) + '.html')
+            except IOError:
+                self.render('500.html')
 
 class BenchmarkHandler(tornado.web.RequestHandler):
     def get(self):
@@ -56,13 +74,13 @@ class UserSignUpHandler(BaseHandler):
             if e:
                 self.write('exists')
                 return
-            self.db.execute("INSERT INTO users (name, password) VALUES (%s, %s)", un, pw)
+            self.db.execute("INSERT INTO users (name, nick, password) VALUES (%s, %s, %s)", un, un, pw)
             e = self.db.get("SELECT * FROM users WHERE name = %s", un)
             if not e:
                 self.write('error')
             else:
-                self.set_secure_cookie('Magica', str(e.id))
-                self.set_secure_cookie('Moe', e.name)
+                self.set_secure_cookie(options._user, str(e.id))
+                self.set_secure_cookie(options._name, e.nick)
                 self.write('ok')
         else:
             raise tornado.web.HTTPError(403)
@@ -75,8 +93,8 @@ class UserSignInHandler(BaseHandler):
         if un and pw:
             e = self.db.get("SELECT * FROM users WHERE lower(name) = %s AND password = %s", un.lower(), pw)
             if e:
-                self.set_secure_cookie('Magica', str(e.id))
-                self.set_secure_cookie('Moe', e.name)
+                self.set_secure_cookie(options._user, str(e.id))
+                self.set_secure_cookie(options._name, e.nick)
                 self.write('ok')
             else:
                 self.write('invalid')
@@ -85,13 +103,52 @@ class UserSignInHandler(BaseHandler):
 
 class UserSignOutHandler(BaseHandler):
     def get(self):
-        self.clear_cookie('Magica')
-        self.clear_cookie('Moe')
+        self.clear_cookie(options._user)
+        self.clear_cookie(options._name)
         self.write('ok')
+
+class ProblemHandler(BaseHandler):
+    def get(self, prob_id = None):
+        if prob_id:
+            _prob = self.db.get('SELECT * FROM problems WHERE id = %s', prob_id)
+            _uin = self.db.get('SELECT * FROM users WHERE id = %s', self.get_current_user())
+            if _prob:
+                self.render('problem.html', prob = _prob, title = _prob.name, uin = _uin)
+            else:
+                raise tornado.web.HTTPError(404)
+        else:
+            _prob = self.db.query('SELECT * FROM problems LIMIT 100')
+            self.render('problist.html', prob = _prob, title = 'Problems')
+    @tornado.web.authenticated
+    def post(self, prob_id = None):
+        if prob_id:
+            if not self.db.get('SELECT * FROM problems WHERE id = %s', prob_id):
+                raise tornado.web.HTTPError(403)
+            self.db.execute('INSERT INTO status (user_id, problem_id, source, compiler) VALUES (%s, %s, %s, %s)', self.get_current_user(), prob_id, self.get_argument('code', None), self.get_argument('lang', None))
+            self.db.execute('UPDATE users SET compiler = %s WHERE id = %s', self.get_argument('lang', None), self.get_current_user())
+            self.redirect("/status")
+        else:
+            raise tornado.web.HTTPError(403)
 
 class ApiNavbarHandler(BaseHandler):
     def get(self):
         self.render('navbar.html')
+
+class ApiStatusHandler(BaseHandler):
+    def get(self, status_id = None):
+        i = self.db.get('SELECT status FROM status WHERE id = %s', status_id)
+        self.write(str(i.status))
+
+class ApiResultHandler(BaseHandler):
+    def get(self, status_id = None):
+        i = self.db.get('SELECT * FROM status WHERE id = %s', status_id)
+        self.write(json.dumps(dict(score = i.score, time = i.time, memory = i.memory, msg = i.compilemsg, status = i.status)))
+
+class NotFoundHandler(BaseHandler):
+    def get(self):
+        raise tornado.web.HTTPError(404)
+    def post(self):
+        raise tornado.web.HTTPError(404)
 
 class Application(tornado.web.Application):
     def __init__(self):
@@ -100,41 +157,47 @@ class Application(tornado.web.Application):
             (r'/', IndexHandler),
             (r'/index', IndexHandler),
             # User
-            #(r'/user/(d+)', UserHandler),
+            #(r'/user/(\d+)', UserHandler),
             (r'/user/signup', UserSignUpHandler),
             (r'/user/signin', UserSignInHandler),
             (r'/user/signout', UserSignOutHandler),
             #(r'/user/update', UserUpdateHandler),
-            #(r'/user/(d+)/update', UserUpdateHandler),
-            #(r'/user/(d+)/delete', UserDeleteHandler),
+            #(r'/user/(\d+)/update', UserUpdateHandler),
+            #(r'/user/(\d+)/delete', UserDeleteHandler),
             # Problem
-            #(r'/problem', ProblemHandler),
-            #(r'/problem/(d+)', ProblemHandler),
+            (r'/problem', ProblemHandler),
+            (r'/problem/(\d+)', ProblemHandler),
             #(r'/problem/new', ProblemAddHandler),
-            #(r'/problem/(d+)/update', ProblemUpdateHandler),
-            #(r'/problem/(d+)/delete', ProblemDeleteHandler),
+            #(r'/problem/(\d+)/update', ProblemUpdateHandler),
+            #(r'/problem/(\d+)/delete', ProblemDeleteHandler),
             # Source
-            #(r'/source/(d+)', SourceHandler),
+            #(r'/source/(\d+)', SourceHandler),
             # Status
             #(r'/status', StatusHandler),
-            #(r'/status/(d+)', StatusHandler),
+            #(r'/status/(\d+)', StatusHandler),
             # Contest
             #(r'/contest', ContestHandler),
-            #(r'/contest/(d+)', ContestHandler),
-            #(r'/contest/(d+)/problem/(\w+)', ContestProblemHandler),
-            #(r'/contest/(d+)/board', ContestBoardHandler),
+            #(r'/contest/(\d+)', ContestHandler),
+            #(r'/contest/(\d+)/problem/(\w+)', ContestProblemHandler),
+            #(r'/contest/(\d+)/board', ContestBoardHandler),
             # Ranklist
             #(r'/ranklist', RanklistHandler),
             # API
             (r'/api/navbar', ApiNavbarHandler),
+            (r'/api/status/(\d+)', ApiStatusHandler),
+            (r'/api/result/(\d+)', ApiResultHandler),
+            # Benchmark
+            (r'/benchmark', BenchmarkHandler),
+            # Not Found
+            (r'/.*', NotFoundHandler),
         ]
         settings = dict(
             template_path = os.path.join(os.path.dirname(__file__), 'views'),
             static_path = os.path.join(os.path.dirname(__file__), 'public'),
             static_url_prefix = '/public/',
             xsrf_cookies = True,
-            cookie_secret = 'Magica',
-            login_url = "/auth/login",
+            cookie_secret = options._secret,
+            login_url = "/",
             debug = True,
         )
         tornado.locale.load_translations(os.path.join(os.path.dirname(__file__), 'i18n'))
@@ -145,9 +208,8 @@ class Application(tornado.web.Application):
         )
 
 if __name__ == '__main__':
-    port = [5555, 6666, 7777, 8888]
-    tornado.options.parse_command_line()
-    for p in port:
-        http_server = tornado.httpserver.HTTPServer(Application())
-        http_server.listen(p)
+    port = int(sys.argv[1])
+    # tornado.options.parse_command_line()
+    http_server = tornado.httpserver.HTTPServer(Application(), xheaders = True)
+    http_server.listen(port)
     tornado.ioloop.IOLoop.instance().start()
