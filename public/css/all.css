@@ -2,7 +2,7 @@
   font-family: 'Ubuntu';
   font-style: normal;
   font-weight: 300;
-  src: local('Ubuntu Light'), local('Ubuntu-Light'), url(/font/ubuntul.woff) format('woff');
+  src: local('Ubuntu Light'), local('Ubuntu-Light'), url(/public/fonts/ubuntul.woff) format('woff');
 }
 
 html, body, h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
@@ -19,7 +19,7 @@ p {
 }
 
 #Magica {
-  padding-top: 70px;
+  padding-top: 50px;
 }
 
 .flash-container {
@@ -51,6 +51,11 @@ p {
 
 .res-limit {
   margin: 30px 0px;
+}
+
+.container-info-update {
+  padding-top: 30px;
+  max-width: 400px;
 }
 
 #com-info {
@@ -87,12 +92,16 @@ p {
   height: 650px !important;
 }
 
+.CodeMirror-code {
+  font-size: 16px;
+}
+
 @media (max-width: 1400px) {
   .CodeMirror {
     height: 400px !important;
   }
+  .CodeMirror-code {
+    font-size: 14px;
+  }
 }
 
-.CodeMirror-code {
-  font-size: 15px;
-}

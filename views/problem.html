@@ -18,38 +18,37 @@
         </div>
         <form method="POST" action="#">
           {% raw xsrf_form_html() %}
-          <input type="hidden" id="lang" name="lang" value="{{ 'C++ (g++)' if not uin else uin.compiler }}" />
+          <input type="hidden" id="lang" name="lang" value="{{ 'Cpp' if not uin else uin.compiler }}" />
           <div class="modal-body">
             <div class="btn-group btn-group-justified">
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="C">C</button>
+                <button type="button" class="btn" id="C">C</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Cpp">C++</button>
+                <button type="button" class="btn" id="Cpp">C++</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Cpp11">C++11</button>
+                <button type="button" class="btn" id="Cpp11">C++11</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Pascal">Pascal</button>
+                <button type="button" class="btn" id="Pascal">Pascal</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Java">Java</button>
+                <button type="button" class="btn" id="Java">Java</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Python">Python</button>
+                <button type="button" class="btn" id="Python">Python</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Python3">Python3</button>
+                <button type="button" class="btn" id="PyPy">PyPy</button>
               </div>
               <div class="btn-group">
-                <button type="button" class="btn btn-default" id="Ruby">Ruby</button>
+                <button type="button" class="btn" id="Ruby">Ruby</button>
               </div>
             </div>
             <textarea id="mirror" name="code"></textarea>
           </div>
           <div class="modal-footer">
-            <div id="com-info"></div>
             <div id="sub-button">
               <button type="button" class="btn btn-default" data-dismiss="modal">{{ _('Close') }}</button>
               <button class="btn btn-primary" type="submit">{{ _('Submit') }}</button>
@@ -71,50 +70,32 @@
 <script src="{{ static_url('cm/mode/ruby/ruby.js') }}"></script>
 <script>
   var m = {};
-  m['C (gcc)'] = 'text/x-csrc'; m['C++ (g++)'] = m['C++11 (g++)'] = 'text/x-c++src'; m['Pascal (fpc)'] = 'pascal';
-  m['Java (openjdk)'] = 'text/x-java'; m['Python (python)'] = m['Python3 (python3)'] = 'python'; m['Ruby (ruby)'] = 'ruby';
+  m['C'] = 'text/x-csrc'; m['Cpp'] = m['Cpp11'] = 'text/x-c++src'; m['Pascal'] = 'pascal';
+  m['Java'] = 'text/x-java'; m['Python'] = m['PyPy'] = 'python'; m['Ruby'] = 'ruby';
   function refreshCompilerInfo(cm) {
     cm.setOption('mode', m[$('#lang').val()]);
-    $('#com-info').text("{{ _('Language:') }} " + $('#lang').val());
+    for (var key in m) {
+      $('#' + key).removeClass();
+      $('#' + key).addClass('btn');
+      if (key == $('#lang').val()) {
+        $('#' + key).addClass('btn-primary');
+      }
+      else {
+        $('#' + key).addClass('btn-default');
+      }
+    }
   }
   $(document).ready(function() {
-    var ncm = CodeMirror.fromTextArea(mirror, {
+    var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), {
       lineNumbers: true,
+      autofocus: true,
       theme: "monokai",
+      indentUnit: 4
     });
     refreshCompilerInfo(ncm);
-    $('#C').click(function() {
-      $('#lang').val('C (gcc)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Cpp').click(function() {
-      $('#lang').val('C++ (g++)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Cpp11').click(function() {
-      $('#lang').val('C++11 (g++)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Pascal').click(function() {
-      $('#lang').val('Pascal (fpc)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Java').click(function() {
-      $('#lang').val('Java (openjdk)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Python').click(function() {
-      $('#lang').val('Python (python)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Python3').click(function() {
-      $('#lang').val('Python3 (python3)');
-      refreshCompilerInfo(ncm);
-    })
-    $('#Ruby').click(function() {
-      $('#lang').val('Ruby (ruby)');
-      refreshCompilerInfo(ncm);
-    })
+    for (var key in m) {
+      eval("$('#" + key + "').click(function() { $('#lang').val('" + key + "'); refreshCompilerInfo(ncm); })");
+    }
   })
 </script>
 {% end %}

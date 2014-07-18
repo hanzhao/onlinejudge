@@ -7,6 +7,7 @@ import sys
 import json
 import os.path
 import traceback
+import socket
 
 import torndb
 import tornado.auth
@@ -38,6 +39,9 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.get_secure_cookie(options._user)
     def get_current_username(self):
         return self.get_secure_cookie(options._name)
+    def is_admin(self):
+        _info = self.db.get('SELECT admin FROM users WHERE id = %s', self.get_current_user())
+        return _info.admin != 0
     def write_error(self, status_code, **kwargs):
         if self.settings.get("debug") and "exc_info" in kwargs:
             self.set_header('Content-Type', 'text/plain')
@@ -49,6 +53,21 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.render(str(status_code) + '.html')
             except IOError:
                 self.render('500.html')
+    def get_username_by_id(self, uid):
+        u = self.db.get('SELECT nick FROM users WHERE id = %s', uid)
+        return str(u.nick)
+    def get_statusname(self, s):
+        high = s >> 10;
+        low = s - high;
+        st_name = ['Pending', 'Compilation Error', 'Accepted'
+                'Running', 'Wrong Answer',
+                'Runtime Error', 'Time Limit Exceeded',
+                'Memory Limit Exceeded', 'Presentation Error',
+                'Non-zero Exit Code', 'Output Limit Exceeded', 'Interval Error']
+        if high < 3:
+            return st_name[high]
+        else:
+            return st_name[high] + ' on case ' + str(low)
 
 class BenchmarkHandler(tornado.web.RequestHandler):
     def get(self):
@@ -68,19 +87,19 @@ class UserSignUpHandler(BaseHandler):
             raise tornado.web.HTTPError(403)
         un, pw = self.get_argument('username', None), self.get_argument('password', None)
         ur = re.compile(r'^\S{3,16}$')
-        pr = re.compile(r'^[a-f0-9]{32}')
+        pr = re.compile(r'^[a-f0-9]{32}$')
         if un and pw and ur.match(un) and pr.match(pw):
-            e = self.db.get("SELECT * FROM users WHERE lower(name) = %s", un.lower())
+            e = self.db.get('SELECT * FROM users WHERE lower(name) = %s', un.lower())
             if e:
                 self.write('exists')
                 return
-            self.db.execute("INSERT INTO users (name, nick, password) VALUES (%s, %s, %s)", un, un, pw)
-            e = self.db.get("SELECT * FROM users WHERE name = %s", un)
+            self.db.execute('INSERT INTO users (name, nick, password) VALUES (%s, %s, %s)', un, un, pw)
+            e = self.db.get('SELECT * FROM users WHERE name = %s', un)
             if not e:
                 self.write('error')
             else:
-                self.set_secure_cookie(options._user, str(e.id))
-                self.set_secure_cookie(options._name, e.nick)
+                self.set_secure_cookie(options._user, str(e.id), httponly = True)
+                self.set_secure_cookie(options._name, e.nick, httponly = True)
                 self.write('ok')
         else:
             raise tornado.web.HTTPError(403)
@@ -91,10 +110,10 @@ class UserSignInHandler(BaseHandler):
             raise tornado.web.HTTPError(403)
         un, pw = self.get_argument('username', None), self.get_argument('password', None)
         if un and pw:
-            e = self.db.get("SELECT * FROM users WHERE lower(name) = %s AND password = %s", un.lower(), pw)
+            e = self.db.get('SELECT * FROM users WHERE lower(name) = %s AND password = %s', un.lower(), pw)
             if e:
-                self.set_secure_cookie(options._user, str(e.id))
-                self.set_secure_cookie(options._name, e.nick)
+                self.set_secure_cookie(options._user, str(e.id), httponly = True)
+                self.set_secure_cookie(options._name, e.nick, httponly = True)
                 self.write('ok')
             else:
                 self.write('invalid')
@@ -106,6 +125,35 @@ class UserSignOutHandler(BaseHandler):
         self.clear_cookie(options._user)
         self.clear_cookie(options._name)
         self.write('ok')
+
+class UserUpdateHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self, _user_id = None):
+        if _user_id:
+            if not self.is_admin():
+                raise tornado.web.HTTPError(403)
+        else:
+            _user_id = self.get_current_user()
+        _user = self.db.get('SELECT * FROM users WHERE id = %s', _user_id)
+        self.render('user_update.html', title = 'Update User', user = _user)
+    @tornado.web.authenticated
+    def post(self, _user_id = None):
+        if _user_id:
+            if not self.is_admin():
+                raise tornado.web.HTTPError(403)
+        else:
+            _user_id = self.get_current_user()
+        nick, pw, admin = self.get_argument('nick', None), self.get_argument('password', None), self.get_argument('admin', None)
+        if nick and nick != '' and nick != self.get_current_username():
+            self.db.execute('UPDATE users SET nick = %s WHERE id = %s', nick, _user_id)
+        if pw and pw != '' and re.compile(r'^[a-f0-9]{32}$').match(pw):
+            self.db.execute('UPDATE users SET password = %s WHERE id = %s', pw, _user_id)
+        if admin and admin != '':
+            self.db.execute('UPDATE users SET admin = %s WHERE id = %s', admin, _user_id)
+        self.write('ok')
+        if _user_id == self.get_current_user():
+            info = self.db.get('SELECT * FROM users WHERE id = %s', _user_id)
+            self.set_secure_cookie(options._name, info.nick)
 
 class ProblemHandler(BaseHandler):
     def get(self, prob_id = None):
@@ -126,9 +174,23 @@ class ProblemHandler(BaseHandler):
                 raise tornado.web.HTTPError(403)
             self.db.execute('INSERT INTO status (user_id, problem_id, source, compiler) VALUES (%s, %s, %s, %s)', self.get_current_user(), prob_id, self.get_argument('code', None), self.get_argument('lang', None))
             self.db.execute('UPDATE users SET compiler = %s WHERE id = %s', self.get_argument('lang', None), self.get_current_user())
+            # Tell Judge Server
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.connect('127.0.0.1:25252')
+            sock.sendall('1')
+            sock.close()
             self.redirect("/status")
         else:
             raise tornado.web.HTTPError(403)
+
+class StatusHandler(BaseHandler):
+    def get(self, run_id = None):
+        if not run_id:
+            _status = self.db.query('SELECT * FROM status ORDER BY id DESC LIMIT 30')
+            self.render('statuslist.html', status = _status, title = 'Status')
+        else:
+            _info = self.db.get('SELECT * FROM status WHERE id = %s', run_id)
+            self.render('status.html', info = _info)
 
 class ApiNavbarHandler(BaseHandler):
     def get(self):
@@ -161,8 +223,8 @@ class Application(tornado.web.Application):
             (r'/user/signup', UserSignUpHandler),
             (r'/user/signin', UserSignInHandler),
             (r'/user/signout', UserSignOutHandler),
-            #(r'/user/update', UserUpdateHandler),
-            #(r'/user/(\d+)/update', UserUpdateHandler),
+            (r'/user/update', UserUpdateHandler),
+            (r'/user/(\d+)/update', UserUpdateHandler),
             #(r'/user/(\d+)/delete', UserDeleteHandler),
             # Problem
             (r'/problem', ProblemHandler),
@@ -173,8 +235,8 @@ class Application(tornado.web.Application):
             # Source
             #(r'/source/(\d+)', SourceHandler),
             # Status
-            #(r'/status', StatusHandler),
-            #(r'/status/(\d+)', StatusHandler),
+            (r'/status', StatusHandler),
+            (r'/status/(\d+)', StatusHandler),
             # Contest
             #(r'/contest', ContestHandler),
             #(r'/contest/(\d+)', ContestHandler),

@@ -1,0 +1,38 @@
+{% extends layout.html %}
+
+{% block body %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ _('Status') }}</h1>
+  </div>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th width="10%">{{ _('Run ID') }}</th>
+        <th width="10%">{{ _('Problem ID') }}</th>
+        <th width="20%">{{ _('Username') }}</th>
+        <th width="20%">{{ _('Run Status') }}</th>
+        <th width="10%">{{ _('Time Used') }}</th>
+        <th width="10%">{{ _('Language') }}</th>
+        <th width="20%">{{ _('Submit Time') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if status %}
+      {% for s in status %}
+        <tr>
+          <th>{{ s.id }}</th>
+          <th>{{ s.problem_id }}</th>
+          <th>{{ handler.get_username_by_id(s.user_id) }}</th>
+          <th>{{ _(handler.get_statusname(s.status)) }}</th>
+          <th>{{ s.time }}</th>
+          <th>{{ _(s.compiler) }}</th>
+          <th>{{ s.created_time }}</th>
+        </tr>
+      {% end %}
+      {% end %}
+    </tbody>
+  </table>
+</div>
+{% end %}
+
