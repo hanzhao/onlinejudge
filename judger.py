@@ -217,6 +217,6 @@ elif kind == 1: # OI Mode
     db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', (3 << 10) + total, totaltime, totalmem, total, run_id)
 
 os.chdir(root_dir)
-#if os.path.exists(dir_name):
-#    rmtree(dir_name)
+if os.path.exists(dir_name):
+    rmtree(dir_name)
 

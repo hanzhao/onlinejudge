@@ -9,9 +9,9 @@
     <thead>
       <tr>
         <th width="7%">{{ _('Run ID') }}</th>
-        <th width="5%">{{ _('Problem ID') }}</th>
+        <th width="7%">{{ _('Problem ID') }}</th>
         <th width="10%">{{ _('Username') }}</th>
-        <th width="30%">{{ _('Run Status') }}</th>
+        <th width="28%">{{ _('Run Status') }}</th>
         <th width="10%">{{ _('Time Used') }}</th>
         <th width="10%">{{ _('Memory Used') }}</th>
         <th width="10%">{{ _('Language') }}</th>
@@ -25,11 +25,11 @@
       <th><a id="run-{{ s.id }}" href="#">{{ s.id }}</a></th>
       <th><a href="/problem/{{ s.problem_id}}">{{ s.problem_id }}</a></th>
       <th><a href="/user/{{ s.user_id }}">{{ handler.get_username_by_id(s.user_id) }}</a></th>
-      <th>{% raw handler.get_statusname(s.status) %}</th>
-      <th>{{ ("%.3g" % s.time) + 's' if s.time != None else 'N/A' }}</th>
-      <th>{{ (str(s.memory) + 'KB') if s.memory != None else 'N/A' }}</th>
+      <th id="st-{{ s.id }}">{% raw handler.get_statusname(s.status) %}</th>
+      <th id="tm-{{ s.id }}">{{ ("%.3g" % s.time) + 's' if s.time != None else 'N/A' }}</th>
+      <th id="mm-{{ s.id }}">{{ (str(s.memory) + 'KB') if s.memory != None else 'N/A' }}</th>
       <th id="com-{{ s.id }}">{{ _(s.compiler) }}</th>
-      <th>{{ s.created_time }}</th>
+      <th>{{ s.created_time + time_offset }}</th>
     </tr>
     {% end %}
     {% end %}
@@ -72,6 +72,7 @@ var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), {
     readOnly: true,
     indentUnit: 4
 });
+var updating = [];
 function getSource(cm, rid) {
   showmsg("{{ _('Fetching...') }}");
   $.get('/api/code/' + rid, function(data, status) {
@@ -81,12 +82,36 @@ function getSource(cm, rid) {
     $('#codeArea').on('shown.bs.modal', function() { cm.refresh(); });
   });
 }
+function refreshStatus() {
+  if (updating.length != 0) {
+    var rid = updating[updating.length - 1];
+    $.get('/api/status/' + rid, function(data, status) {
+      $('#st-' + rid).html(data);
+      var runst = $('#st-' + rid).text();
+      if (runst != "Pending" && runst.split(' ')[0] != "Running") {
+        updating.pop();
+        $.get('/api/result/' + rid, function(data, status) {
+          var p = data.split('|');
+          $('#tm-' + rid).html(p[0]);
+          $('#mm-' + rid).html(p[1]);
+        });
+      }
+    });
+  }
+}
 $(document).ready(function() {
   var runID = $('a[id^=run-]').get();
   for (var i in runID) {
     var rid = runID[i].id.split('-')[1];
     eval("$('#run-" + rid + "').click(function() { getSource(ncm, " + rid + "); });");
+    var runst = $('#st-' + rid).text();
+    if (runst == "Pending" || runst.split(' ')[0] == "Running") {
+      updating.push(rid);
+      $('#tm-' + rid).html('<i class="fa fa-spinner"></i>');
+      $('#mm-' + rid).html('<i class="fa fa-spinner"></i>');
+    }
   }
+  setInterval("refreshStatus()", 100);
 })
 </script>
 {% end %}

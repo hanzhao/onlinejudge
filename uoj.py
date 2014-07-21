@@ -8,6 +8,7 @@ import json
 import os.path
 import traceback
 import socket
+import datetime
 
 import torndb
 import tornado.auth
@@ -25,6 +26,7 @@ define('mysql_password', default = '123456', help = 'blog database password')
 define('_user', 'Magica')
 define('_name', 'Moe')
 define('_secret', 'MagicaCookie')
+define('time_offset', datetime.timedelta(hours = 8))
 define('judger_addr', '127.0.0.1:25252')
 define('st_name', ['Pending', 'Compilation Error', 'Accepted', 'Unaccepted', # 0 - 3
                    'Running', 'Wrong Answer', # 4 - 5
@@ -65,12 +67,14 @@ class BaseHandler(tornado.web.RequestHandler):
         u = self.db.get('SELECT nick FROM users WHERE id = %s', uid)
         return str(u.nick)
     def get_statusname(self, s):
-        high = s >> 10;
-        low = s - (high << 10);
+        high = s >> 10
+        low = s - (high << 10)
         if high < 3:
             return '<div class="status-' + str(high) +  '">' + options.st_name[high] + '</div>'
         elif high == 3:
             return '<div class="status-3">' + options.st_name[3] + ': ' + str(low) + '</div>'
+        elif high == 4:
+            return '<div class="status-' + str(high) + '">' + options.st_name[high] + ' on case ' + str(low) + '</div>'
         else:
             return '<div class="status-' + str(high) + '">' + options.st_name[high] + ' on case ' + str(low) + '</div>'
 
@@ -192,7 +196,7 @@ class StatusHandler(BaseHandler):
     def get(self, run_id = None):
         if not run_id:
             _status = self.db.query('SELECT * FROM status ORDER BY id DESC LIMIT 30')
-            self.render('statuslist.html', status = _status, title = 'Status')
+            self.render('statuslist.html', status = _status, title = 'Status', time_offset = options.time_offset)
         else:
             _info = self.db.get('SELECT * FROM status WHERE id = %s', run_id)
             self.render('status.html', info = _info)
@@ -204,12 +208,12 @@ class ApiNavbarHandler(BaseHandler):
 class ApiStatusHandler(BaseHandler):
     def get(self, status_id = None):
         i = self.db.get('SELECT status FROM status WHERE id = %s', status_id)
-        self.write(str(i.status))
+        self.write(self.get_statusname(i.status))
 
 class ApiResultHandler(BaseHandler):
     def get(self, status_id = None):
         i = self.db.get('SELECT * FROM status WHERE id = %s', status_id)
-        self.write(json.dumps(dict(score = i.score, time = i.time, memory = i.memory, msg = i.compilemsg, status = i.status)))
+        self.write(("%.3g" % i.time) + 's|' + str(i.memory) + 'KB')
 
 class ApiCodeHandler(BaseHandler):
     def get(self, status_id = None):
