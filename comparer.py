@@ -29,10 +29,10 @@ s = open(std)
 flag = True
 while True:
     x = ''
-    while x and x == '':
+    while x is '':
         x = o.readline().strip()
     y = ''
-    while y and y == '':
+    while y is '':
         y = s.readline().strip()
     if not x and not y:
         break

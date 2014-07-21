@@ -96,6 +96,7 @@
     for (var key in m) {
       eval("$('#" + key + "').click(function() { $('#lang').val('" + key + "'); refreshCompilerInfo(ncm); })");
     }
+    $('#codeArea').on('shown.bs.modal', function() { ncm.refresh(); });
   })
 </script>
 {% end %}

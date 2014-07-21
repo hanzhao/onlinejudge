@@ -33,3 +33,9 @@
 "Admin", 管理员
 "Cpp11", C++11
 "Cpp", C++
+"Fetching...", 获取中...
+"Run Status", 运行状态
+"Time Used", 总耗时
+"Memory Used", 占用内存
+"Language", 语言
+"Submit Time", 提交时间

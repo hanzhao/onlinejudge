@@ -65,26 +65,27 @@
 var m = {};
 m['C'] = 'text/x-csrc'; m['C++'] = m['C++11'] = 'text/x-c++src'; m['Pascal'] = 'pascal';
 m['Java'] = 'text/x-java'; m['Python'] = m['PyPy'] = 'python'; m['Ruby'] = 'ruby';
-$(document).ready(function() {
-  var runID = $('a[id^=run-]').get();
-  var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), {
+var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), {
     lineNumbers: true,
     autofocus: true,
     theme: "monokai",
     readOnly: true,
     indentUnit: 4
+});
+function getSource(cm, rid) {
+  showmsg("{{ _('Fetching...') }}");
+  $.get('/api/code/' + rid, function(data, status) {
+    cm.setValue(data);
+    cm.setOption('mode', m[$('#com-' + rid).text()]);
+    $('#codeArea').modal();
+    $('#codeArea').on('shown.bs.modal', function() { cm.refresh(); });
   });
+}
+$(document).ready(function() {
+  var runID = $('a[id^=run-]').get();
   for (var i in runID) {
     var rid = runID[i].id.split('-')[1];
-    console.log(rid);
-    $('#run-' + rid).click(function() {
-      showmsg("{{ _('Fetching...') }}");
-      $.get('/api/code/' + rid, function(data, status) {
-        ncm.setValue(data);
-        ncm.setOption('mode', m[$('#com-' + rid).text()]);
-        $('#codeArea').modal();
-      });
-    });
+    eval("$('#run-" + rid + "').click(function() { getSource(ncm, " + rid + "); });");
   }
 })
 </script>

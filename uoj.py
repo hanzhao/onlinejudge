@@ -191,7 +191,7 @@ class ProblemHandler(BaseHandler):
 class StatusHandler(BaseHandler):
     def get(self, run_id = None):
         if not run_id:
-            _status = self.db.query('SELECT * FROM status ORDER BY id DESC')
+            _status = self.db.query('SELECT * FROM status ORDER BY id DESC LIMIT 30')
             self.render('statuslist.html', status = _status, title = 'Status')
         else:
             _info = self.db.get('SELECT * FROM status WHERE id = %s', run_id)

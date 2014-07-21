@@ -206,6 +206,10 @@ for line in config:
         db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
         if kind == 0: # ACM Mode, Stop.
             break
+    if os.path.exists('_tmp_output'):
+        os.remove('_tmp_output')
+    if kind == 1 and os.path.exists('_tmp_errmsg'):
+        os.remove('_tmp_errmsg')
 config.close()
 if total >= 100:
     db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', 2 << 10, totaltime, totalmem, total, run_id)
@@ -213,6 +217,6 @@ elif kind == 1: # OI Mode
     db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', (3 << 10) + total, totaltime, totalmem, total, run_id)
 
 os.chdir(root_dir)
-if os.path.exists(dir_name):
-    rmtree(dir_name)
+#if os.path.exists(dir_name):
+#    rmtree(dir_name)
 
