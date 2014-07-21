@@ -3,6 +3,7 @@
 import os
 import sys
 import math
+import signal
 import subprocess
 import torndb
 from glob import *
@@ -26,6 +27,7 @@ source = status.source
 kind = prob.kind
 state = 0
 
+root_dir = os.getcwd()
 prob_dir = os.getcwd() + '/problems/' + str(status.problem_id)
 
 # Temp Directory
@@ -35,6 +37,8 @@ if os.path.exists(dir_name):
     rmtree(dir_name)
 os.mkdir(dir_name)
 copy('./runner.py', dir_name)
+if not prob.sj:
+    copy('./comparer.py', dir_name)
 os.chdir(dir_name)
 
 ################
@@ -104,9 +108,13 @@ elif lang == 'Python':
         state = 1 << 10
 elif lang == 'PyPy':
     f = open('Main.py', 'w')
+    f.write("#!/usr/bin/env pypy\n")
     f.write(source)
     f.close()
     # Syntax Check & Compile
+    cmd = 'chmod +x Main.py'
+    p = subprocess.Popen(cmd, shell = True)
+    p.wait()
     cmd = 'pypy -m py_compile Main.py'
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
@@ -127,8 +135,10 @@ elif lang == 'Ruby':
     if p.returncode != 0:
         state = 1 << 10
 if state == 1 << 10:
-    db.execute('UPDATE statis SET status = %s, compilemsg = %s WHERE id = %s', state, compile_msg, run_id)
+    db.execute('UPDATE status SET status = %s, compilemsg = %s WHERE id = %s', state, compile_msg, run_id)
     sys.exit(0)
+else:
+    db.execute('UPDATE status SET compilemsg = %s WHERE id = %s', compile_msg, run_id)
 
 ################
 # Prepare Data
@@ -136,18 +146,73 @@ if state == 1 << 10:
 for name in glob(prob_dir + '/*'):
     copy(name, './')
 
+
 config = open('config', 'r')
+case = 0
+total = 0
+totaltime = 0.0
+totalmem = 0
 for line in config:
+    case += 1
     inp, outp, time_limit, score = line.split('|')
-    cmd = ' '.join(['./runner.py', lang, inp, 'tmp_output', str(int(math.ceil(float(time_limit))))])
+    cmd = ' '.join(['./runner.py', lang, inp, str(int(math.ceil(float(time_limit))))])
     p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE)
+    state = 4 << 10
+    db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
     p.wait()
-    returncode, exited, timeused, memoryused = p.stdout.read().split()
-    returncode = int(returncode)
-    exited = bool(exited)
+    exited, exitstatus, signaled, termsig, dumped, timeused, memoryused = p.stdout.read().split()
+    exited = (exited == "True")
+    exitstatus = int(exitstatus)
+    signaled = (signaled == "True")
+    termsig = int(termsig)
+    dumped = (dumped == "True")
     timeused = float(timeused)
     memoryused = int(memoryused)
-    # TODO
+    totaltime = totaltime + timeused
+    totalmem = max(memoryused, totalmem)
+    ###################
+    # Judge
+    ###################
+    if dumped: # Runtime Error
+        if signaled and termsig == signal.SIGSEGV: # Segmentation Violation
+            state = 9 << 10
+        elif signaled and termsig == signal.SIGFPE: # Floating-point Exception
+            state = 7 << 10
+        elif signaled and termsig == 16: # Stack Fault
+            state = 10 << 10
+        else: # Runtime Error
+            state = 6 << 10
+    elif timeused > float(time_limit): # Time Limit Exceeded
+        state = 11 << 10
+    elif memoryused > prob.memorylimit: # Memory Limit Exceeded
+        state = 12 << 10
+    elif not exited: # Runtime Error
+        state = 6 << 10
+    elif exitstatus != 0: # Non-zero Exit Status
+        state = 14 << 10
+    else:
+        cmd = ' '.join(['./comparer.py', inp, outp, '_tmp_output'])
+        p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE)
+        p.wait()
+        msg = int(p.stdout.read())
+        if msg == 0: # Wrong Answer
+            state = 5 << 10
+        elif msg == 1: # Presentation Error
+            state = 13 << 10
+        else: # Accepted!
+            state = 2 << 10
+            total += int(score)
+    if state != 4 << 10 and state != 2 << 10:
+        db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
+        if kind == 0: # ACM Mode, Stop.
+            break
 config.close()
+if total >= 100:
+    db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', 2 << 10, totaltime, totalmem, total, run_id)
+elif kind == 1: # OI Mode
+    db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', (3 << 10) + total, totaltime, totalmem, total, run_id)
 
-status = db.execute('UPDATE status SET status = %s, compilemsg = %s WHERE id = %s', state, compile_msg, run_id)
+os.chdir(root_dir)
+if os.path.exists(dir_name):
+    rmtree(dir_name)
+

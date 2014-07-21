@@ -25,6 +25,14 @@ define('mysql_password', default = '123456', help = 'blog database password')
 define('_user', 'Magica')
 define('_name', 'Moe')
 define('_secret', 'MagicaCookie')
+define('judger_addr', '127.0.0.1:25252')
+define('st_name', ['Pending', 'Compilation Error', 'Accepted', 'Unaccepted', # 0 - 3
+                   'Running', 'Wrong Answer', # 4 - 5
+                   'Runtime Error', 'Floating-point Exception', # 6 - 7
+                   'Assertion Failed', 'Segmentation Violation', 'Stack Fault', # 8 - 10
+                   'Time Limit Exceeded', 'Memory Limit Exceeded', 'Presentation Error', # 11 - 13
+                   'Non-zero Exit Status', 'Output Limit Exceeded', 'Judger Error', # 14 - 16
+                   'Interval Error']) # 17
 
 class BaseHandler(tornado.web.RequestHandler):
     @property
@@ -58,16 +66,13 @@ class BaseHandler(tornado.web.RequestHandler):
         return str(u.nick)
     def get_statusname(self, s):
         high = s >> 10;
-        low = s - high;
-        st_name = ['Pending', 'Compilation Error', 'Accepted'
-                'Running', 'Wrong Answer',
-                'Runtime Error', 'Time Limit Exceeded',
-                'Memory Limit Exceeded', 'Presentation Error',
-                'Non-zero Exit Code', 'Output Limit Exceeded', 'Interval Error']
+        low = s - (high << 10);
         if high < 3:
-            return st_name[high]
+            return '<div class="status-' + str(high) +  '">' + options.st_name[high] + '</div>'
+        elif high == 3:
+            return '<div class="status-3">' + options.st_name[3] + ': ' + str(low) + '</div>'
         else:
-            return st_name[high] + ' on case ' + str(low)
+            return '<div class="status-' + str(high) + '">' + options.st_name[high] + ' on case ' + str(low) + '</div>'
 
 class BenchmarkHandler(tornado.web.RequestHandler):
     def get(self):
@@ -176,7 +181,7 @@ class ProblemHandler(BaseHandler):
             self.db.execute('UPDATE users SET compiler = %s WHERE id = %s', self.get_argument('lang', None), self.get_current_user())
             # Tell Judge Server
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect('127.0.0.1:25252')
+            sock.connect(options.judger_addr)
             sock.sendall('1')
             sock.close()
             self.redirect("/status")
@@ -186,7 +191,7 @@ class ProblemHandler(BaseHandler):
 class StatusHandler(BaseHandler):
     def get(self, run_id = None):
         if not run_id:
-            _status = self.db.query('SELECT * FROM status ORDER BY id DESC LIMIT 30')
+            _status = self.db.query('SELECT * FROM status ORDER BY id DESC')
             self.render('statuslist.html', status = _status, title = 'Status')
         else:
             _info = self.db.get('SELECT * FROM status WHERE id = %s', run_id)
@@ -205,6 +210,11 @@ class ApiResultHandler(BaseHandler):
     def get(self, status_id = None):
         i = self.db.get('SELECT * FROM status WHERE id = %s', status_id)
         self.write(json.dumps(dict(score = i.score, time = i.time, memory = i.memory, msg = i.compilemsg, status = i.status)))
+
+class ApiCodeHandler(BaseHandler):
+    def get(self, status_id = None):
+        i = self.db.get('SELECT source FROM status WHERE id = %s', status_id)
+        self.write(i.source)
 
 class NotFoundHandler(BaseHandler):
     def get(self):
@@ -248,6 +258,7 @@ class Application(tornado.web.Application):
             (r'/api/navbar', ApiNavbarHandler),
             (r'/api/status/(\d+)', ApiStatusHandler),
             (r'/api/result/(\d+)', ApiResultHandler),
+            (r'/api/code/(\d+)', ApiCodeHandler),
             # Benchmark
             (r'/benchmark', BenchmarkHandler),
             # Not Found

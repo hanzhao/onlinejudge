@@ -1,0 +1,8 @@
+RuntimeError: Bad magic number in .pyc file
+g compiled-in sys.path.
+debug: WARNING: 'sys.prefix' will not be set.
+debug: WARNING: Make sure the pypy binary is kept inside its tree of files.
+debug: WARNING: It is ok to create a symlink to it from somewhere else.
+debug: OperationError:
+debug:  operror-type: ImportError
+debug:  operror-value: No module named os

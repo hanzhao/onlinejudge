@@ -8,31 +8,85 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th width="10%">{{ _('Run ID') }}</th>
-        <th width="10%">{{ _('Problem ID') }}</th>
-        <th width="20%">{{ _('Username') }}</th>
-        <th width="20%">{{ _('Run Status') }}</th>
+        <th width="7%">{{ _('Run ID') }}</th>
+        <th width="5%">{{ _('Problem ID') }}</th>
+        <th width="10%">{{ _('Username') }}</th>
+        <th width="30%">{{ _('Run Status') }}</th>
         <th width="10%">{{ _('Time Used') }}</th>
+        <th width="10%">{{ _('Memory Used') }}</th>
         <th width="10%">{{ _('Language') }}</th>
-        <th width="20%">{{ _('Submit Time') }}</th>
+        <th width="18%">{{ _('Submit Time') }}</th>
       </tr>
     </thead>
     <tbody>
-      {% if status %}
-      {% for s in status %}
-        <tr>
-          <th>{{ s.id }}</th>
-          <th>{{ s.problem_id }}</th>
-          <th>{{ handler.get_username_by_id(s.user_id) }}</th>
-          <th>{{ _(handler.get_statusname(s.status)) }}</th>
-          <th>{{ s.time }}</th>
-          <th>{{ _(s.compiler) }}</th>
-          <th>{{ s.created_time }}</th>
-        </tr>
-      {% end %}
-      {% end %}
+    {% if status %}
+    {% for s in status %}
+    <tr>
+      <th><a id="run-{{ s.id }}" href="#">{{ s.id }}</a></th>
+      <th><a href="/problem/{{ s.problem_id}}">{{ s.problem_id }}</a></th>
+      <th><a href="/user/{{ s.user_id }}">{{ handler.get_username_by_id(s.user_id) }}</a></th>
+      <th>{% raw handler.get_statusname(s.status) %}</th>
+      <th>{{ ("%.3g" % s.time) + 's' if s.time != None else 'N/A' }}</th>
+      <th>{{ (str(s.memory) + 'KB') if s.memory != None else 'N/A' }}</th>
+      <th id="com-{{ s.id }}">{{ _(s.compiler) }}</th>
+      <th>{{ s.created_time }}</th>
+    </tr>
+    {% end %}
+    {% end %}
     </tbody>
   </table>
+  <div class="modal fade" id="codeArea" tabindex="-1" role="dialog" aria-labelledby="codeAreaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="codeAreaLabel">{{ _('View Source') }}</h4>
+        </div>
+        <div class="modal-body">
+          <textarea id="mirror" name="code"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">{{ _('Close') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+{% end %}
+{% block bottom %}
+<link rel="stylesheet" href="{{ static_url('cm/lib/codemirror.css') }}">
+<link rel="stylesheet" href="{{ static_url('cm/theme/monokai.css') }}">
+<script src="{{ static_url('cm/lib/codemirror.js') }}"></script>
+<script src="{{ static_url('cm/mode/pascal/pascal.js') }}"></script>
+<script src="{{ static_url('cm/mode/clike/clike.js') }}"></script>
+<script src="{{ static_url('cm/mode/python/python.js') }}"></script>
+<script src="{{ static_url('cm/mode/ruby/ruby.js') }}"></script>
+<script>
+var m = {};
+m['C'] = 'text/x-csrc'; m['C++'] = m['C++11'] = 'text/x-c++src'; m['Pascal'] = 'pascal';
+m['Java'] = 'text/x-java'; m['Python'] = m['PyPy'] = 'python'; m['Ruby'] = 'ruby';
+$(document).ready(function() {
+  var runID = $('a[id^=run-]').get();
+  var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), {
+    lineNumbers: true,
+    autofocus: true,
+    theme: "monokai",
+    readOnly: true,
+    indentUnit: 4
+  });
+  for (var i in runID) {
+    var rid = runID[i].id.split('-')[1];
+    console.log(rid);
+    $('#run-' + rid).click(function() {
+      showmsg("{{ _('Fetching...') }}");
+      $.get('/api/code/' + rid, function(data, status) {
+        ncm.setValue(data);
+        ncm.setOption('mode', m[$('#com-' + rid).text()]);
+        $('#codeArea').modal();
+      });
+    });
+  }
+})
+</script>
 {% end %}
 

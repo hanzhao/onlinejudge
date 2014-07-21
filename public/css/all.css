@@ -105,3 +105,39 @@ p {
   }
 }
 
+.status-0 {
+  color: #DDD;
+}
+.status-1 {
+  color: #ECA;
+}
+.status-2 {
+  color: #F00;
+}
+.status-3 {
+  color: #0F0;
+}
+.status-4 {
+  color: #FFB90F;
+}
+.status-5 {
+  color: #66CD00;
+}
+.status-6, .status-7, .status-8, .status-9, .status-10 {
+  color: #00F;
+}
+.status-11, .status-12, .status-15 {
+  color: #CD5C5C;
+}
+.status-13 {
+  color: #FF6347;
+}
+.status-14 {
+  color: #7D26CD;
+}
+.status-16 {
+  color: #424242;
+}
+.status-17 {
+  color: #A52A2A;
+}

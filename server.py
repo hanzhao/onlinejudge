@@ -1,5 +1,6 @@
 #!/usr/bin/env pypy
 
+import sys
 import socket
 import traceback
 import subprocess
@@ -25,7 +26,7 @@ while True:
         if buf == '1':
             db = torndb.Connection(mysql_host, mysql_database, mysql_user, mysql_password, max_idle_time = 5)
             db._ensure_connected()
-            status = db.query('SELECT * FROM status WHERE status = %s ORDER BY id DESC LIMIT 1', 0)
+            status = db.query('SELECT * FROM status WHERE status = %s ORDER BY id DESC', 0)
             for s in status:
                 p = subprocess.Popen('./judger.py ' + str(s.id), shell=True)
                 p.wait()
