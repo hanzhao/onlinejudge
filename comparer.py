@@ -5,7 +5,7 @@ import sys
 inp, outp, std = sys.argv[1], sys.argv[2], sys.argv[3]
 
 #### Normal Judge
-o = open(outp)
+"""o = open(outp)
 s = open(std)
 flag = True
 while True:
@@ -22,6 +22,7 @@ s.close()
 if flag:
     print 10
     sys.exit(0)
+"""
 
 #### Advance Judge
 o = open(outp)

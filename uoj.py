@@ -213,7 +213,17 @@ class ApiStatusHandler(BaseHandler):
 class ApiResultHandler(BaseHandler):
     def get(self, status_id = None):
         i = self.db.get('SELECT * FROM status WHERE id = %s', status_id)
-        self.write(("%.3g" % i.time) + 's|' + str(i.memory) + 'KB')
+        l = ''
+        r = ''
+        if i.time == None:
+            l = 'N/A'
+        else:
+            l = "%.3gs" % i.time
+        if i.memory == None:
+            r = 'N/A'
+        else:
+            r = str(i.memory) + 'KB'
+        self.write(l + '|' + r)
 
 class ApiCodeHandler(BaseHandler):
     def get(self, status_id = None):

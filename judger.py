@@ -152,6 +152,7 @@ case = 0
 total = 0
 totaltime = 0.0
 totalmem = 0
+ACFlag = True
 for line in config:
     case += 1
     inp, outp, time_limit, score = line.split('|')
@@ -180,6 +181,8 @@ for line in config:
             state = 7 << 10
         elif signaled and termsig == 16: # Stack Fault
             state = 10 << 10
+        elif signaled and termsig == 6:
+            state = 8 << 10
         else: # Runtime Error
             state = 6 << 10
     elif timeused > float(time_limit): # Time Limit Exceeded
@@ -205,13 +208,14 @@ for line in config:
     if state != 4 << 10 and state != 2 << 10:
         db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
         if kind == 0: # ACM Mode, Stop.
+            ACFlag = False
             break
     if os.path.exists('_tmp_output'):
         os.remove('_tmp_output')
     if kind == 1 and os.path.exists('_tmp_errmsg'):
         os.remove('_tmp_errmsg')
 config.close()
-if total >= 100:
+if ACFlag and total >= 100:
     db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', 2 << 10, totaltime, totalmem, total, run_id)
 elif kind == 1: # OI Mode
     db.execute('UPDATE status SET status = %s, time = %s, memory = %s, score = %s WHERE id = %s', (3 << 10) + total, totaltime, totalmem, total, run_id)
