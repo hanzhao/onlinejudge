@@ -208,7 +208,7 @@ $.ajaxSetup({
   }});
 function verify(a, b) {
   var ar = /^(\w){3,16}$/;
-  var br = /^(\w){6,16}$/;
+  var br = /^(\S){6,16}$/;
   var af = ar.exec(a);
   var bf = br.exec(b);
   return af && bf;
