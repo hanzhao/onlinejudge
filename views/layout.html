@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="{{ static_url('css/all.css') }}">
 <link rel="icon" href="/favicon.ico">
 <title>{{ _(title) + ' - ' + _('Online Judge') }}</title>
+<script src="{{ static_url('js/jquery.min.js') }}"></script>
+<script src="{{ static_url('js/all.js') }}"></script>
 </head>
 <body>
 <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -22,9 +24,7 @@
   <div class="flash-alert">
   </div>
 </div>
-<script src="{{ static_url('js/jquery.min.js') }}"></script>
 <script src="{{ static_url('js/bootstrap.min.js') }}"></script>
-<script src="{{ static_url('js/all.js') }}"></script>
 <script type="text/javascript">
 function bindnavbar() {
   $('#sign-up').click(function() {
