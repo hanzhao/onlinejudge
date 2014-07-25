@@ -16,15 +16,6 @@
   <div class="container" id="navbar">
   </div>
 </div>
-<div id="Magica">
-  {% block body %}
-  {% end %}
-</div>
-<div class="flash-container">
-  <div class="flash-alert">
-  </div>
-</div>
-<script src="{{ static_url('js/bootstrap.min.js') }}"></script>
 <script type="text/javascript">
 function bindnavbar() {
   $('#sign-up').click(function() {
@@ -65,6 +56,15 @@ function bindnavbar() {
 }
 $.get('/api/navbar', function(data, status) { $('#navbar').html(data); bindnavbar() })
 </script>
+<div id="Magica">
+  {% block body %}
+  {% end %}
+</div>
+<div class="flash-container">
+  <div class="flash-alert">
+  </div>
+</div>
+<script src="{{ static_url('js/bootstrap.min.js') }}"></script>
 {% block bottom %}
 {% end %}
 </body>
