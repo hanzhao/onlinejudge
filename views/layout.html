@@ -31,7 +31,7 @@ function bindnavbar() {
     var a = $('#username').val();
     var b = $('#password').val();
     if (verify(a, b)) {
-      $.post('/user/signup', { username: a, password: $.md5($.md5(a) + $.md5(b)) }, function(data, status) {
+      $.post('/user/signup', { username: a, password: $.md5($.md5(a.toLowerCase()) + $.md5(b)) }, function(data, status) {
         if (data != 'ok') {
         if (data == 'exists') { showmsg("{{ _('Username exists already.') }}"); }
         else { showmsg("{{ _('Something wrong.') }}"); }
@@ -47,7 +47,7 @@ function bindnavbar() {
     var a = $('#username').val();
     var b = $('#password').val();
     if (verify(a, b)) {
-      $.post('/user/signin', { username: a, password: $.md5($.md5(a) + $.md5(b)) }, function(data, status) {
+      $.post('/user/signin', { username: a, password: $.md5($.md5(a.toLowerCase()) + $.md5(b)) }, function(data, status) {
         if (data != 'ok') {
           if (data == "invalid") { showmsg("{{ _('Invalid username or password.') }}"); }
           else { showmsg("{{ _('Something wrong.') }}"); }

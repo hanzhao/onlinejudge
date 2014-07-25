@@ -157,7 +157,7 @@ for line in config:
     case += 1
     inp, outp, time_limit, score = line.split('|')
     cmd = ' '.join(['./runner.py', lang, inp, str(int(math.ceil(float(time_limit))))])
-    p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE)
+    p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, close_fds = True)
     state = 4 << 10
     db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
     p.wait()
@@ -195,7 +195,7 @@ for line in config:
         state = 14 << 10
     else:
         cmd = ' '.join(['./comparer.py', inp, outp, '_tmp_output'])
-        p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE)
+        p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, close_fds = True)
         p.wait()
         msg = int(p.stdout.read())
         if msg == 0: # Wrong Answer

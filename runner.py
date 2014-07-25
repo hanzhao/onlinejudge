@@ -23,9 +23,11 @@ argv = { 'C': '',
         'Python': 'Main.pyc',
         'PyPy': '',
         'Ruby': 'Main.rb' }
+"""
 env = { 'GEM_PATH': '/home/magimagi/.rvm/gems/ruby-2.1.2:/home/magimagi/.rvm/gems/ruby-2.1.2@global',
         'PATH': '/home/magimagi/.pyenv/shims:/home/magimagi/.pyenv/bin:/home/magimagi/.rvm/gems/ruby-2.1.2/bin:/home/magimagi/.rvm/gems/ruby-2.1.2@global/bin:/home/magimagi/.   rvm/rubies/ruby-2.1.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/magimagi/.local/bin:/home/magimagi/.rvm/bin',
         'GEM_HOME': '/home/magimagi/.rvm/gems/ruby-2.1.2' }
+"""
 
 pid = os.fork()
 if pid == 0:
@@ -39,8 +41,8 @@ if pid == 0:
     os.dup2(errfd, 2)
     os.close(errfd)
     setrlimit(RLIMIT_CPU, (time + 1, time + 1))
-    os.execvpe(cmd[lang], ('', argv[lang]), env)
+    os.execvpe(cmd[lang], ('', argv[lang]), {'': ''})
     sys._exit(255)
 else:
     _, status, usage = os.wait4(RUSAGE_CHILDREN, os.WUNTRACED)
-    print os.WIFEXITED(status), os.WEXITSTATUS(status), os.WIFSIGNALED(status), os.WTERMSIG(status), os.WCOREDUMP(status), usage.ru_utime + usage.ru_stime, (usage.ru_maxrss if usage.ru_maxrss <= 17292 else usage.ru_maxrss - 17292)
+    print os.WIFEXITED(status), os.WEXITSTATUS(status), os.WIFSIGNALED(status), os.WTERMSIG(status), os.WCOREDUMP(status), usage.ru_utime + usage.ru_stime, (usage.ru_maxrss if usage.ru_maxrss <= 16000 else usage.ru_maxrss - 16000)
