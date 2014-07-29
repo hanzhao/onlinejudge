@@ -69,34 +69,30 @@
 <script src="{{ static_url('cm/mode/python/python.js') }}"></script>
 <script src="{{ static_url('cm/mode/ruby/ruby.js') }}"></script>
 <script>
-  var m = {};
-  m['C'] = 'text/x-csrc'; m['Cpp'] = m['Cpp11'] = 'text/x-c++src'; m['Pascal'] = 'pascal';
-  m['Java'] = 'text/x-java'; m['Python'] = m['PyPy'] = 'python'; m['Ruby'] = 'ruby';
-  function refreshCompilerInfo(cm) {
-    cm.setOption('mode', m[$('#lang').val()]);
-    for (var key in m) {
-      $('#' + key).removeClass();
-      $('#' + key).addClass('btn');
-      if (key == $('#lang').val()) {
-        $('#' + key).addClass('btn-primary');
-      }
-      else {
-        $('#' + key).addClass('btn-default');
-      }
+var m = {};
+m['C'] = 'text/x-csrc'; m['Cpp'] = m['Cpp11'] = 'text/x-c++src'; m['Pascal'] = 'pascal';
+m['Java'] = 'text/x-java'; m['Python'] = m['PyPy'] = 'python'; m['Ruby'] = 'ruby';
+function refreshCompilerInfo(cm) {
+  cm.setOption('mode', m[$('#lang').val()]);
+  for (var key in m) {
+    $('#' + key).removeClass();
+    $('#' + key).addClass('btn');
+    if (key == $('#lang').val()) {
+      $('#' + key).addClass('btn-primary');
+    }
+    else {
+      $('#' + key).addClass('btn-default');
     }
   }
-  $(document).ready(function() {
-    var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), {
-      lineNumbers: true,
-      autofocus: true,
-      theme: "monokai",
-      indentUnit: 4
-    });
-    refreshCompilerInfo(ncm);
-    for (var key in m) {
-      eval("$('#" + key + "').click(function() { $('#lang').val('" + key + "'); refreshCompilerInfo(ncm); })");
-    }
-    $('#codeArea').on('shown.bs.modal', function() { ncm.refresh(); });
-  })
+}
+$(document).ready(function() {
+  var ncm = CodeMirror.fromTextArea(document.getElementById('mirror'), { lineNumbers: true, autofocus: true, theme: "monokai", indentUnit: 4 });
+  refreshCompilerInfo(ncm);
+  for (var key in m) { eval("$('#" + key + "').click(function() { $('#lang').val('" + key + "'); refreshCompilerInfo(ncm); })"); }
+  $('#codeArea').on('shown.bs.modal', function() { ncm.refresh(); });
+})
+{% if prob.sj %}
+  showmsg("{{ _('This problem is judged by a special judge') }}");
+{% end %}
 </script>
 {% end %}
