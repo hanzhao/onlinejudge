@@ -101,6 +101,7 @@ p {
 }
 
 .CodeMirror {
+  font-family: "Ubuntu Mono", "Monaco", "Consolas", "Courier New", "Monospace" !important;
   height: 650px !important;
 }
 

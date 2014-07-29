@@ -28,6 +28,7 @@ kind = prob.kind
 state = 0
 
 root_dir = os.getcwd()
+runner_dir = os.getcwd() + '/runners'
 prob_dir = os.getcwd() + '/problems/' + str(status.problem_id)
 
 # Temp Directory
@@ -36,9 +37,9 @@ compile_msg = None
 if os.path.exists(dir_name):
     rmtree(dir_name)
 os.mkdir(dir_name)
-copy('./runner.py', dir_name)
+# copy('./runner.py', dir_name)
 if not prob.sj:
-    copy('./comparer.py', dir_name)
+    copy('./comparer', dir_name)
 os.chdir(dir_name)
 
 ################
@@ -53,9 +54,12 @@ if lang == 'C':
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Compile Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/c_runner', './runner')
 elif lang == 'Cpp' or lang == 'Cpp11':
     f = open('Main.cpp', 'w')
     f.write(source)
@@ -67,9 +71,12 @@ elif lang == 'Cpp' or lang == 'Cpp11':
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Compile Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/cpp_runner', './runner')
 elif lang == 'Pascal':
     f = open('Main.pas', 'w')
     f.write(source)
@@ -79,9 +86,12 @@ elif lang == 'Pascal':
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Compile Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/pas_runner', './runner')
 elif lang == 'Java':
     f = open('Main.java', 'w')
     f.write(source)
@@ -91,21 +101,31 @@ elif lang == 'Java':
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Compile Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/java_runner', './runner')
 elif lang == 'Python':
     f = open('Main.py', 'w')
+    f.write("#!/usr/bin/env python\n")
     f.write(source)
     f.close()
     # Syntax Check & Compile
+    cmd = 'chmod +x Main.py'
+    p = subprocess.Popen(cmd, shell = True)
+    p.wait()
     cmd = 'python -m py_compile Main.py'
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Compile Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/py_runner', './runner')
 elif lang == 'PyPy':
     f = open('Main.py', 'w')
     f.write("#!/usr/bin/env pypy\n")
@@ -119,21 +139,31 @@ elif lang == 'PyPy':
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Compile Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/pypy_runner', './runner')
 elif lang == 'Ruby':
     f = open('Main.rb', 'w')
+    f.write("#!/usr/bin/env ruby\n")
     f.write(source)
     f.close()
     # Syntax Check
+    cmd = 'chmod +x Main.rb'
+    p = subprocess.Popen(cmd, shell = True)
+    p.wait()
     cmd = 'ruby -c Main.rb'
     p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE)
     p.wait()
     compile_msg = p.stderr.read()
+    p.stderr.close()
     # Syntax Error
     if p.returncode != 0:
         state = 1 << 10
+    else:
+        copy(runner_dir + '/rb_runner', './runner')
 if state == 1 << 10:
     db.execute('UPDATE status SET status = %s, compilemsg = %s WHERE id = %s', state, compile_msg, run_id)
     sys.exit(0)
@@ -156,17 +186,18 @@ ACFlag = True
 for line in config:
     case += 1
     inp, outp, time_limit, score = line.split('|')
-    cmd = ' '.join(['./runner.py', lang, inp, str(int(math.ceil(float(time_limit))))])
+    cmd = ' '.join(['./runner', lang, inp, str(int(math.ceil(float(time_limit))))])
     p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, close_fds = True)
     state = 4 << 10
     db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
     p.wait()
     exited, exitstatus, signaled, termsig, dumped, timeused, memoryused = p.stdout.read().split()
-    exited = (exited == "True")
+    p.stdout.close()
+    exited = (exited == "True") or (exited == "1")
     exitstatus = int(exitstatus)
-    signaled = (signaled == "True")
+    signaled = (signaled == "True") or (exited == "1")
     termsig = int(termsig)
-    dumped = (dumped == "True")
+    dumped = (dumped == "True") or (exited == "1")
     timeused = float(timeused)
     memoryused = int(memoryused)
     totaltime = totaltime + timeused
@@ -194,10 +225,11 @@ for line in config:
     elif exitstatus != 0: # Non-zero Exit Status
         state = 14 << 10
     else:
-        cmd = ' '.join(['./comparer.py', inp, outp, '_tmp_output'])
+        cmd = ' '.join(['./comparer', inp, outp, '_tmp_output'])
         p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, close_fds = True)
         p.wait()
         msg = int(p.stdout.read())
+        p.stdout.close()
         if msg == 0: # Wrong Answer
             state = 5 << 10
         elif msg == 1: # Presentation Error

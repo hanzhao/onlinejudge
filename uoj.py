@@ -25,7 +25,7 @@ define('mysql_user', default = 'judge', help = 'blog database user')
 define('mysql_password', default = '123456', help = 'blog database password')
 define('_user', 'Magica')
 define('_name', 'Moe')
-define('_secret', 'MagicaCookie')
+define('_secret', 'YourSecretHere')
 define('time_offset', datetime.timedelta(hours = 8))
 define('judger_addr', '127.0.0.1:25252')
 define('st_name', ['Pending', 'Compilation Error', 'Accepted', 'Unaccepted', # 0 - 3
@@ -88,7 +88,7 @@ class IndexHandler(BaseHandler):
 
 class UserHandler(BaseHandler):
     def get(self, _uid):
-        self.render('user.html', uid = _uid)
+        self.render('user.html', uid = _uid, title = self.get_username_by_id(_uid) + ' Info')
 
 class UserSignUpHandler(BaseHandler):
     def post(self):
