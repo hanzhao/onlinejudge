@@ -186,7 +186,7 @@ ACFlag = True
 for line in config:
     case += 1
     inp, outp, time_limit, score = line.split('|')
-    cmd = ' '.join(['./runner', lang, inp, str(int(math.ceil(float(time_limit))))])
+    cmd = ' '.join(['./runner', str(int(math.ceil(float(time_limit)))), inp])
     p = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, close_fds = True)
     state = 4 << 10
     db.execute('UPDATE status SET status = %s WHERE id = %s', state + case, run_id)
